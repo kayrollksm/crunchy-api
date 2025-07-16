@@ -1,34 +1,30 @@
 export default async function handler(req, res) {
-  // CORS setup
+  // ✅ CORS setup
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
+  // ✅ Handle preflight request (OPTIONS)
   if (req.method === "OPTIONS") {
-    return res.status(200).end(); // CORS preflight
+    return res.status(200).end();
   }
 
-  const { nama, telefon, email, referral } = req.body;
+  const { nama, telefon, email, referral, pendaftar_id, batch } = req.body;
 
-  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-  const SUPABASE_URL = "https://qdyojftztydvhyjbdnaq.supabase.co";
+  try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/pendaftar`, {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_SERVICE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify({
-      nama,
-      telefon,
-      email,
-      referral,
-    }),
-  });
+    const { data, error } = await supabase.from("pendaftar").insert([
+      { nama, telefon, email, referral, pendaftar_id, batch },
+    ]);
 
-  const data = await response.json();
-  res.status(200).json(data);
+    if (error) throw error;
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
